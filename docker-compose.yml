@@ -1,0 +1,295 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-file: ${DOCKERLOGGING_MAXFILE}
+    max-size: ${DOCKERLOGGING_MAXSIZE}
+
+x-labels: &pullio-labels
+  - org.hotio.pullio.update=${PULLIO_UPDATE}
+  - org.hotio.pullio.notify=${PULLIO_NOTIFY}
+
+services:
+  # --- INFRASTRUCTURE ---
+  caddy:
+    container_name: caddy
+    image: ghcr.io/hotio/caddy:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "80:8080"
+      - "443:8443"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKERCONFDIR}/caddy:/config
+
+  cloudflare-ddns:
+    container_name: cloudflare-ddns
+    image: ghcr.io/hotio/cloudflareddns:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - INTERVAL=300
+      - DETECTION_MODE=dig-whoami.cloudflare
+      - LOG_LEVEL=3
+      - APPRISE
+      - UPDATE_IPV4=true
+      - UPDATE_IPV6=true
+      - CF_USER=${CF_USER}
+      - CF_APIKEY=${CF_APIKEY}
+      - CF_APITOKEN=${CF_APITOKEN}
+      - CF_HOSTS=${CF_HOSTS}
+    volumes:
+      - ${DOCKERCONFDIR}/cloudflareddns:/config
+
+  # --- INDEXING & ACQUISITION ---
+  prowlarr:
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKERCONFDIR}/prowlarr:/config
+
+  sabnzbd:
+    container_name: sabnzbd
+    image: ghcr.io/hotio/sabnzbd:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "8080:8080"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - ARGS
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${DOCKERCONFDIR}/sabnzbd:/config
+      - ${DOCKERSTORAGEDIR}/usenet:/data/usenet:rw
+
+  # --- AUTOMATION & LOGIC ---
+  radarr:
+    container_name: radarr
+    image: ghcr.io/hotio/radarr:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "7878:7878"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${DOCKERCONFDIR}/radarr:/config
+      - ${DOCKERSTORAGEDIR}:/data
+
+  sonarr-tv:
+    container_name: sonarr-tv
+    image: ghcr.io/hotio/sonarr:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "8989:8989"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${DOCKERCONFDIR}/sonarr-tv:/config
+      - ${DOCKERSTORAGEDIR}:/data
+
+  sonarr-anime:
+    container_name: sonarr-anime
+    image: ghcr.io/hotio/sonarr:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "9090:8989"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${DOCKERCONFDIR}/sonarr-anime:/config
+      - ${DOCKERSTORAGEDIR}:/data
+
+  bazarr:
+    container_name: bazarr
+    image: ghcr.io/hotio/bazarr:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "6767:6767"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${DOCKERCONFDIR}/bazarr:/config
+      - ${DOCKERSTORAGEDIR}/media:/data/media
+
+  clonarr:
+    container_name: clonarr
+    image: ghcr.io/prophetse7en/clonarr:latest
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - mediacore
+    ports:
+      - "6060:6060"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${DOCKERCONFDIR}/clonarr:/config
+
+  # --- FRONTEND ---
+  seerr:
+    container_name: seerr
+    image: ghcr.io/hotio/seerr:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "5055:5055"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKERCONFDIR}/seerr:/config
+
+  # --- PRESENTATION & TELEMETRY ---
+  plex:
+    container_name: plex
+    image: ghcr.io/hotio/plex:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    network_mode: host
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - PLEX_CLAIM_TOKEN=${PLEX_CLAIM_TOKEN}
+      - PLEX_ADVERTISE_URL=${PLEX_ADVERTISE_URL}
+      - PLEX_NO_AUTH_NETWORKS=${PLEX_NO_AUTH_NETWORKS}
+      - PLEX_BETA_INSTALL=false
+      - PLEX_PURGE_CODECS=false
+    volumes:
+      - ${DOCKERCONFDIR}/plex:/config
+      - ${DOCKERSTORAGEDIR}/media:/data/media:ro
+
+  tautulli:
+    container_name: tautulli
+    image: ghcr.io/hotio/tautulli:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "8181:8181"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKERCONFDIR}/tautulli:/config
+
+  autoscan:
+    container_name: autoscan
+    image: ghcr.io/hotio/autoscan:latest
+    restart: unless-stopped
+    logging: *default-logging
+    labels: *pullio-labels
+    networks:
+      - mediacore
+    ports:
+      - "3030:3030"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKERCONFDIR}/autoscan:/config
+
+  jellyfin:
+    container_name: jellyfin
+    image: ghcr.io/hotio/jellyfin:latest
+    profiles:
+      - disabled
+    logging: *default-logging
+    labels: *pullio-labels
+    network_mode: host
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKERCONFDIR}/jellyfin:/config
+      - ${DOCKERSTORAGEDIR}/media:/data/media:ro
+
+# --- NETWORKS ---
+networks:
+  mediacore:
+    name: mediacore
+    driver: bridge
