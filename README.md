@@ -63,6 +63,11 @@ The host file system must be configured exactly as follows to ensure atomic oper
         └── anime/
 
 ```
+To create, replace `/volumeX/` with the volume you wish to use
+```bash
+mkdir -p /volumeX/data/{usenet/{incomplete,complete}/{tv,movies,anime},media/{tv,movies,anime}}
+mkdir -p /volumeX/docker/{appdata/{caddy,cloudflareddns,prowlarr,sabnzbd,radarr,sonarr-tv,sonarr-anime,bazarr,clonarr,seerr,plex,jellyfin,tautull,autoscan},scripts}
+```
 
 ## Network Configuration
 
@@ -146,11 +151,29 @@ PLEX_NO_AUTH_NETWORKS=192.168.1.0/24,172.18.0.0/16
 
 ### 3. Initialization
 
-Deploy the stack using Docker Compose. Ensure you are executing this as a user with Docker socket permissions.
+Download the `docker-compose.yml` to your `/volumeX/docker/appdata` location so you can get your important stuff together.
 
 ```bash
-docker-compose up -d
+wget https://raw.githubusercontent.com/McHearty/saltspite.local/refs/heads/main/docker-compose.yml -P /volume2/docker/appdata/
+```
+Download this `.env.example` to your `/volumeX/docker/appdata` location next to the docker-compose.yml.
 
+```bash
+wget https://raw.githubusercontent.com/McHearty/saltspite.local/refs/heads/main/.env.example -O /volume2/docker/appdata/.env
+```
+Ensure user has permissions, changing `USER` to the user managing the stack, if you are importing an existing library you will need to run these commands again after import.
+```bash
+sudo chown -R USER:users /volume1/data /volume1/docker
+```
+```bash
+sudo chmod -R a=,a+rX,u+w,g+w /volume1/data /volume1/docker
+```
+Run the Docker Compose
+```bash
+cd /volumeX/docker/appdata
+```
+```bash
+sudo docker-compose up -d
 ```
 
 ### 4. Local DNS Resolution
