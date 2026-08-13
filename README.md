@@ -1,14 +1,14 @@
-# Saltstrike Media Architecture
+# Saltspite Media Architecture
 
 ## Overview
 
-This repository contains the declarative infrastructure for the Saltstrike media stack, optimized specifically for the Synology DS923+. It is a fully automated, Usenet-exclusive media acquisition and presentation pipeline.
+This repository contains the declarative infrastructure for the Saltspite media stack, optimized specifically for the Synology DS923+. It is a fully automated, Usenet-exclusive media acquisition and presentation pipeline.
 
 ## Design Philosophy
 
 This stack is built on strict engineering principles to maximize performance, ensure data integrity, and minimize system overhead on NAS hardware.
 
-* **Atomic Hardlinks:** The file system is structurally unified under `/volume1/data`. This eliminates I/O-intensive cross-volume copy operations. Media imports occur instantaneously via inode pointers.
+* **Atomic Hardlinks:** The file system is structurally unified under `/volumeX/data`. This eliminates I/O-intensive cross-volume copy operations. Media imports occur instantaneously via inode pointers.
 * **Protocol Singularity:** BitTorrent and its associated peripheral services have been entirely deprecated in favor of a Usenet-only pipeline (SABnzbd). This reduces disk thrashing, eliminates the need for unpacking daemons, and accelerates acquisition.
 * **Separation of Concerns:** Episodic television and Anime are segregated into two distinct Sonarr instances. This prevents metadata collisions and allows for highly specialized release profiling.
 * **Principle of Least Privilege:** Security is enforced at the container level. The presentation layer (Plex/Jellyfin) is restricted to read-only (`:ro`) access to the media library, preventing accidental or malicious file deletion.
@@ -82,7 +82,7 @@ The stack utilizes a hybrid networking model to resolve broadcast limitations in
 
 ### Infrastructure & Access
 
-* **Caddy:** Reverse proxy handling internal domain routing (`saltstrike.server`) and eventual public Cloudflare TLS termination.
+* **Caddy:** Reverse proxy handling internal domain routing (`Saltspite.server`) and eventual public Cloudflare TLS termination.
 * **Cloudflare DDNS:** Dynamic IP updater securely configured with a scoped Zone DNS API token.
 
 ### Indexing & Acquisition
@@ -178,7 +178,16 @@ sudo docker-compose up -d
 
 ### 4. Local DNS Resolution
 
-To access the services via the internal Caddy routing, you must configure your local DNS server (e.g., Pi-hole, router) to point `*.saltstrike.server` to the Synology NAS's static LAN IP address.
+To access the services via the internal Caddy routing, you must configure your local DNS server (e.g., Pi-hole, router) to point `*.Saltspite.server` to the Synology NAS's static LAN IP address.
+
+Additionally, Synology automatically binds to ports 443 and 80 even if you’re not using their built-in reverse proxy. To get around this run the following, and set it up as a boot time task.
+```bash
+sed -i -e 's/80/82/' -e 's/443/444/' /usr/syno/share/nginx/server.mustache /usr/syno/share/nginx/DSM.mustache /usr/syno/share/nginx/WWWService.mustache
+
+synosystemctl restart nginx
+```
+
+SABnzbd requires hostname whitelisting, you can find this in Special -> host_whitelist
 
 ### 5. Automated Updates (Pullio)
 
