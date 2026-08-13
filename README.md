@@ -50,7 +50,7 @@ This stack is built on strict engineering principles to maximize performance, en
 The host file system must be configured exactly as follows to ensure atomic operations and proper access control list (ACL) inheritance.
 
 ```text
-/volume1/
+/volumeX/
 ├── docker/
 │   ├── appdata/           # Application config directories mapped to /config
 │   ├── scripts/           # Host-level bash scripts (e.g., pullio.sh)
@@ -111,7 +111,7 @@ The stack utilizes a hybrid networking model to resolve broadcast limitations in
 ### 1. Pre-Requisites
 
 1. Establish a dedicated `media` user and `docker-media` group via the Synology Control Panel.
-2. Grant the group exact Read/Write permissions to `/volume1/docker` and `/volume1/data`.
+2. Grant the group exact Read/Write permissions to `/volumeX/docker` and `/volumeX/data`.
 3. SSH into the NAS and retrieve the numerical IDs: `id media`.
 
 ### 2. Environment Configuration
@@ -126,8 +126,8 @@ TZ=Europe/Istanbul
 UMASK=002
 
 # Paths
-DOCKERCONFDIR=/volume1/docker/appdata
-DOCKERSTORAGEDIR=/volume1/data
+DOCKERCONFDIR=/volumeX/docker/appdata
+DOCKERSTORAGEDIR=/volumeX/data
 
 # Logging
 DOCKERLOGGING_MAXFILE=10
@@ -154,19 +154,19 @@ PLEX_NO_AUTH_NETWORKS=192.168.1.0/24,172.18.0.0/16
 Download the `docker-compose.yml` to your `/volumeX/docker/appdata` location so you can get your important stuff together.
 
 ```bash
-wget https://raw.githubusercontent.com/McHearty/saltspite.local/refs/heads/main/docker-compose.yml -P /volume2/docker/appdata/
+wget https://raw.githubusercontent.com/McHearty/saltspite.local/refs/heads/main/docker-compose.yml -P /volumeX/docker/appdata/
 ```
 Download this `.env.example` to your `/volumeX/docker/appdata` location next to the docker-compose.yml.
 
 ```bash
-wget https://raw.githubusercontent.com/McHearty/saltspite.local/refs/heads/main/.env.example -O /volume2/docker/appdata/.env
+wget https://raw.githubusercontent.com/McHearty/saltspite.local/refs/heads/main/.env.example -O /volumeX/docker/appdata/.env
 ```
 Ensure user has permissions, changing `USER` to the user managing the stack, if you are importing an existing library you will need to run these commands again after import.
 ```bash
-sudo chown -R USER:users /volume1/data /volume1/docker
+sudo chown -R USER:users /volumeX/data /volumeX/docker
 ```
 ```bash
-sudo chmod -R a=,a+rX,u+w,g+w /volume1/data /volume1/docker
+sudo chmod -R a=,a+rX,u+w,g+w /volumeX/data /volumeX/docker
 ```
 Run the Docker Compose
 ```bash
@@ -193,6 +193,6 @@ SABnzbd requires hostname whitelisting, you can find this in Special -> host_whi
 
 Container updates are completely automated via `pullio`.
 
-1. Download the `pullio` bash script to `/volume1/docker/scripts/`.
+1. Download the `pullio` bash script to `/volumeX/docker/scripts/`.
 2. Create a Scheduled Task in the Synology Control Panel.
-3. Set the task to run daily as `root` executing: `bash /volume1/docker/scripts/pullio.sh`.
+3. Set the task to run daily as `root` executing: `bash /volumeX/docker/scripts/pullio.sh`.
